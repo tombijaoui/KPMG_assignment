@@ -24,6 +24,7 @@ class AzureFoundryModelConfig:
     endpoint: str
     key: str
     api_version: str
+    model_name: str
 
 
 def _require(name: str) -> str:
@@ -52,7 +53,8 @@ def get_llm_gpt_4o_config() -> AzureFoundryModelConfig:
     try:
         config = AzureFoundryModelConfig(endpoint=_require("AZURE_GPT_4O_MODEL_ENDPOINT"), 
                                         key=_require("AZURE_FOUNDRY_MODELS_KEY"),
-                                        api_version=_require("AZURE_GPT_4O_MODEL_API_VERSION"))
+                                        api_version=_require("AZURE_GPT_4O_MODEL_API_VERSION"),
+                                        model_name=_require("AZURE_GPT_4O_MODEL_NAME"))
 
         logger.info("GPT-4o model configuration loaded successfully")
         return config
@@ -65,7 +67,8 @@ def get_llm_gpt_4o_mini_config() -> AzureFoundryModelConfig:
     try:
         config = AzureFoundryModelConfig(endpoint=_require("AZURE_GPT_4O_MINI_MODEL_ENDPOINT"), 
                                         key=_require("AZURE_FOUNDRY_MODELS_KEY"),
-                                        api_version=_require("AZURE_GPT_4O_MINI_MODEL_API_VERSION"))
+                                        api_version=_require("AZURE_GPT_4O_MINI_MODEL_API_VERSION"),
+                                        model_name=_require("AZURE_GPT_4O_MINI_MODEL_NAME"))
 
         logger.info("GPT-4o model configuration loaded successfully")
         return config
