@@ -1,5 +1,3 @@
-"""Layer 3 — normalization and structural validation of extracted form fields."""
-
 from __future__ import annotations
 
 import re
@@ -7,19 +5,19 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from config.logger import get_logger
+from phase_1.src.constants import (
+    ALLOWED_GENDER_VALUES,
+    ALLOWED_GENDERS_HE,
+    ALLOWED_HEALTH_FUND_VALUES,
+    ALLOWED_HEALTH_FUNDS_HE,
+    DIGITS_ONLY,
+    HEALTH_FUNDS_BY_LENGTH,
+    ID_PATTERN,
+    MOBILE_PHONE_PATTERN,
+    POSTAL_CODE_PATTERN,
+)
 
 logger = get_logger(__name__)
-
-_DIGITS_ONLY = re.compile(r"\D")
-_MOBILE_PHONE_PATTERN = re.compile(r"^05\d{8}$")
-_POSTAL_CODE_PATTERN = re.compile(r"^\d{6,7}$")
-_ID_PATTERN = re.compile(r"^\d{9,10}$")
-
-_ALLOWED_GENDERS_HE = frozenset({"זכר", "נקבה"})
-_ALLOWED_GENDER_VALUES = frozenset({"זכר", "נקבה", ""})
-_ALLOWED_HEALTH_FUNDS_HE = frozenset({"כללית", "מאוחדת", "מכבי", "לאומית"})
-_ALLOWED_HEALTH_FUND_VALUES = frozenset({"כללית", "מאוחדת", "מכבי", "לאומית", ""})
-_HEALTH_FUNDS_BY_LENGTH = sorted(_ALLOWED_HEALTH_FUNDS_HE, key=len, reverse=True)
 
 
 # --- Normalization -----------------------------------------------------------------
@@ -35,12 +33,13 @@ def normalize_phone_number(value: str) -> str:
     if not value or not str(value).strip():
         return ""
 
-    digits = _DIGITS_ONLY.sub("", str(value).strip())
+    digits = DIGITS_ONLY.sub("", str(value).strip())
     if not digits:
         return ""
 
     if not digits.startswith("0"):
         corrected = "0" + digits[1:]
+
         logger.info(
             "Phone number normalized: leading digit corrected to 0 (was %s)",
             digits[0],
@@ -57,10 +56,13 @@ def normalize_gender(value: str) -> str:
     Unknown English labels, OCR noise, or free text are cleared to "".
     """
     raw = str(value or "").strip()
+
     if not raw:
         return ""
-    if raw in _ALLOWED_GENDERS_HE:
+
+    if raw in ALLOWED_GENDERS_HE:
         return raw
+
     logger.info("Gender normalized to empty (value was not זכר or נקבה)")
     return ""
 
@@ -73,14 +75,18 @@ def normalize_health_fund_member(value: str) -> str:
     that canonical name is returned; otherwise "".
     """
     raw = str(value or "").strip()
+
     if not raw:
         return ""
-    if raw in _ALLOWED_HEALTH_FUNDS_HE:
+
+    if raw in ALLOWED_HEALTH_FUNDS_HE:
         return raw
-    for fund in _HEALTH_FUNDS_BY_LENGTH:
+
+    for fund in HEALTH_FUNDS_BY_LENGTH:
         if fund in raw:
             logger.info("Health fund normalized from noisy OCR text to canonical name")
             return fund
+
     logger.info("Health fund normalized to empty (unrecognized value)")
     return ""
 
@@ -113,7 +119,6 @@ def normalize_extracted_fields(fields: dict[str, Any]) -> dict[str, Any]:
 @dataclass
 class FieldCheckResult:
     """Result of a single field validation."""
-
     valid: bool
     field_path: str
     message: str = ""
@@ -122,7 +127,6 @@ class FieldCheckResult:
 @dataclass
 class ValidationPipelineResult:
     """Aggregated validation output."""
-
     checks: list[FieldCheckResult] = field(default_factory=list)
     is_valid: bool = True
 
@@ -140,12 +144,7 @@ class ValidationPipelineResult:
         }
 
 
-def check_date_validity(
-    date_obj: Any,
-    *,
-    field_path: str,
-    allow_all_empty: bool = True,
-) -> FieldCheckResult:
+def check_date_validity(date_obj: Any, *, field_path: str, allow_all_empty: bool = True) -> FieldCheckResult:
     """
     Validate a date object with day, month, year string fields.
 
@@ -206,8 +205,8 @@ def check_id_validity(value: str, *, field_path: str = "idNumber") -> FieldCheck
             message="Empty ID (optional)",
         )
 
-    digits = _DIGITS_ONLY.sub("", str(value).strip())
-    if _ID_PATTERN.fullmatch(digits):
+    digits = DIGITS_ONLY.sub("", str(value).strip())
+    if ID_PATTERN.fullmatch(digits):
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
     return FieldCheckResult(
@@ -220,7 +219,7 @@ def check_id_validity(value: str, *, field_path: str = "idNumber") -> FieldCheck
 def check_gender_validity(value: str, *, field_path: str = "gender") -> FieldCheckResult:
     """Gender must be Hebrew male (זכר), female (נקבה), or empty (after normalization)."""
     normalized = normalize_gender(value)
-    if normalized in _ALLOWED_GENDER_VALUES:
+    if normalized in ALLOWED_GENDER_VALUES:
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
     return FieldCheckResult(
@@ -237,7 +236,7 @@ def check_health_fund_member_validity(
 ) -> FieldCheckResult:
     """Health fund must be one of the four Israeli funds in Hebrew, or empty."""
     normalized = normalize_health_fund_member(value)
-    if normalized in _ALLOWED_HEALTH_FUND_VALUES:
+    if normalized in ALLOWED_HEALTH_FUND_VALUES:
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
     return FieldCheckResult(
@@ -256,8 +255,8 @@ def check_mobile_phone_validity(value: str, *, field_path: str = "mobilePhone") 
             message="Empty mobile (optional)",
         )
 
-    digits = _DIGITS_ONLY.sub("", str(value).strip())
-    if _MOBILE_PHONE_PATTERN.fullmatch(digits):
+    digits = DIGITS_ONLY.sub("", str(value).strip())
+    if MOBILE_PHONE_PATTERN.fullmatch(digits):
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
     return FieldCheckResult(
@@ -276,7 +275,7 @@ def check_landline_phone_validity(value: str, *, field_path: str = "landlinePhon
             message="Empty landline (optional)",
         )
 
-    digits = _DIGITS_ONLY.sub("", str(value).strip())
+    digits = DIGITS_ONLY.sub("", str(value).strip())
     if re.fullmatch(r"0\d{8,9}", digits):
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
@@ -296,8 +295,8 @@ def check_postal_code_validity(value: str, *, field_path: str = "address.postalC
             message="Empty postal code (optional)",
         )
 
-    digits = _DIGITS_ONLY.sub("", str(value).strip())
-    if _POSTAL_CODE_PATTERN.fullmatch(digits):
+    digits = DIGITS_ONLY.sub("", str(value).strip())
+    if POSTAL_CODE_PATTERN.fullmatch(digits):
         return FieldCheckResult(valid=True, field_path=field_path, message="OK")
 
     return FieldCheckResult(

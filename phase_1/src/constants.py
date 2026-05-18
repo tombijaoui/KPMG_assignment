@@ -4,10 +4,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-# --- Paths & Document Intelligence -------------------------------------------------
+# --- Document Intelligence constants -------------------------------------------------
 
-PHASE_1_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PDF = PHASE_1_ROOT / "data" / "283_ex2.pdf"
 LAYOUT_MODEL_ID = "prebuilt-layout"
 
 CONTENT_TYPE_BY_SUFFIX = {
@@ -61,7 +59,6 @@ ACCIDENT_DETAILS_SCHEMA: dict[str, Any] = {
     },
 }
 
-# Subset returned by the refinement LLM call; merged back into the full draft.
 REFINEMENT_FOCUS_SCHEMA: dict[str, Any] = {
     "gender": "",
     "medicalInstitutionFields": {

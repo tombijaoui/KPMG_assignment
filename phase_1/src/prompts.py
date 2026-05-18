@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# --- Pass 1 & 2: extraction (shared system prompt) -----------------------------------
+# --- LLM Call 1 & 2: layer 2a & 2b: extraction (shared system prompt) -----------------------------------
 
 EXTRACTION_SYSTEM_PROMPT = """You extract data from Israeli National Insurance (Bituah Leumi) work-injury forms.
 The OCR text may be in Hebrew or English. Checkbox markers appear as :selected: and :unselected:.
@@ -30,7 +30,7 @@ def build_extraction_user_message(task: str, schema_json: str, ocr_text: str) ->
     )
 
 
-# --- Pass 3: refinement ------------------------------------------------------------
+# --- LLM Call 3: layer 2c: refinement ------------------------------------------------------------
 
 REFINEMENT_SYSTEM_PROMPT = (
     "You output only corrected JSON for Israeli work-injury forms. No prose."
