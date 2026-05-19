@@ -1,5 +1,3 @@
-"""FAISS retrieval and LLM tool schema for the Q&A knowledge base."""
-
 from __future__ import annotations
 
 import json
@@ -22,28 +20,6 @@ from phase_2.src.constants import ALLOWED_HMO, ALLOWED_INSURANCE_TIERS
 from phase_2.src.models import UserProfile
 
 logger = get_logger(__name__)
-
-SEARCH_HMO_KNOWLEDGE_TOOL: dict[str, Any] = {
-    "type": "function",
-    "function": {
-        "name": "search_hmo_knowledge",
-        "description": (
-            "Search the Israeli health-fund knowledge base for medical service coverage, "
-            "benefits, and contact details. Use when the user asks about HMO services, "
-            "insurance tiers, discounts, or phone numbers — not for greetings or profile edits."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query reflecting what to look up, in the user's language",
-                },
-            },
-            "required": ["query"],
-        },
-    },
-}
 
 
 @dataclass(frozen=True)
