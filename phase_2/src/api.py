@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, HTTPException, Request
+from openai import AsyncAzureOpenAI
 from pydantic import ValidationError
 
 from config.auth import create_llm_gpt_4o_client, get_llm_gpt_4o_config
 from config.logger import get_logger
 from phase_2.src.constants import COLLECT_LLM_TEMPERATURE
+from phase_2.src.indexing import load_faiss_knowledge_base, run_indexing_pipeline
 from phase_2.src.models import (
     CollectInfoRequest,
     CollectInfoResponse,
@@ -18,19 +20,27 @@ from phase_2.src.models import (
 from phase_2.src.prompts import COLLECT_SYSTEM_PROMPT, build_collect_user_message
 from phase_2.src.validation import is_profile_complete, merge_profile
 
-from openai import AsyncAzureOpenAI
-
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Shared AsyncAzureOpenAI client for the app lifetime."""
+    # OpenAI client
     config = get_llm_gpt_4o_config()
     app.state.openai_client = create_llm_gpt_4o_client(config, async_client=True)
-
     app.state.openai_model_name = config.model_name
     logger.info("Async OpenAI client ready (model=%s)", config.model_name)
+
+ 
+    # Knowledge base
+    try:
+        loaded = await asyncio.to_thread(load_faiss_knowledge_base)
+
+    except FileNotFoundError:
+        await asyncio.to_thread(run_indexing_pipeline)
+        loaded = await asyncio.to_thread(load_faiss_knowledge_base)
+
+    app.state.faiss_index, app.state.kb_chunks, app.state.kb_manifest = loaded
 
     yield
 
