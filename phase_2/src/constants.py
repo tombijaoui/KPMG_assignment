@@ -28,6 +28,9 @@ ALLOWED_INSURANCE_TIERS = frozenset({"זהב", "כסף", "ארד"})
 PHASE_2_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_HTML_DIR = PHASE_2_DIR / "data"
 DEFAULT_KB_DIR = PHASE_2_DIR / "knowledge_base"
+FAISS_INDEX_FILENAME = "faiss.index"
+KB_CHUNKS_FILENAME = "chunks.json"
+KB_MANIFEST_FILENAME = "manifest.json"
 
 HMOS: tuple[str, ...] = tuple(sorted(ALLOWED_HMO, key=len, reverse=True))
 TIERS: tuple[str, ...] = tuple(sorted(ALLOWED_INSURANCE_TIERS, key=len, reverse=True))
