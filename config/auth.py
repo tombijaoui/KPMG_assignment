@@ -48,6 +48,7 @@ def get_document_intelligence_config() -> DocumentIntelligenceConfig:
     except ValueError:
         logger.error("Failed to load Document Intelligence configuration")
         raise
+        
 
 def get_llm_gpt_4o_config() -> AzureFoundryModelConfig:
     try:
@@ -63,6 +64,7 @@ def get_llm_gpt_4o_config() -> AzureFoundryModelConfig:
         logger.error("Failed to load GPT-4o model configuration")
         raise
 
+
 def get_llm_gpt_4o_mini_config() -> AzureFoundryModelConfig:
     try:
         config = AzureFoundryModelConfig(endpoint=_require("AZURE_GPT_4O_MINI_MODEL_ENDPOINT"), 
@@ -76,6 +78,22 @@ def get_llm_gpt_4o_mini_config() -> AzureFoundryModelConfig:
     except ValueError:
         logger.error("Failed to load GPT-4o model configuration")
         raise
+
+
+def get_text_embedding_ada_config() -> AzureFoundryModelConfig:
+    try:
+        config = AzureFoundryModelConfig(endpoint=_require("AZURE_TEXT_EMBEDDING_ADA_002_MODEL_ENDPOINT"), 
+                                        key=_require("AZURE_FOUNDRY_MODELS_KEY"),
+                                        api_version=_require("AZURE_TEXT_EMBEDDING_ADA_002_MODEL_API_VERSION"),
+                                        model_name=_require("AZURE_TEXT_EMBEDDING_ADA_002_MODEL_NAME"))
+
+        logger.info("Text embedding ADA 002 model configuration loaded successfully")
+        return config
+
+    except ValueError:
+        logger.error("Failed to load Text embedding ADA 002 model configuration")
+        raise
+
 
 def create_document_intelligence_client(config: DocumentIntelligenceConfig | None = None) -> DocumentIntelligenceClient:
     try:
@@ -95,6 +113,7 @@ def create_document_intelligence_client(config: DocumentIntelligenceConfig | Non
     except Exception:
         logger.exception("Failed to create Document Intelligence client")
         raise
+
 
 def create_llm_gpt_4o_client(config: AzureFoundryModelConfig | None = None, *, async_client: bool = False) -> AzureOpenAI | AsyncAzureOpenAI:
     try:
@@ -120,6 +139,7 @@ def create_llm_gpt_4o_client(config: AzureFoundryModelConfig | None = None, *, a
         logger.exception("Failed to create GPT-4o model client")
         raise
 
+
 def create_llm_gpt_4o_mini_client(config: AzureFoundryModelConfig | None = None) -> AzureOpenAI:
     try:
         cfg = config or get_llm_gpt_4o_mini_config()
@@ -137,4 +157,24 @@ def create_llm_gpt_4o_mini_client(config: AzureFoundryModelConfig | None = None)
 
     except Exception:
         logger.exception("Failed to create GPT-4o mini model client")
+        raise
+
+
+def create_text_embedding_ada_client(config: AzureFoundryModelConfig | None = None) -> AzureOpenAI:
+    try:
+        cfg = config or get_text_embedding_ada_config()
+
+        logger.info("Creating Text embedding ADA 002 model client")
+
+        client = AzureOpenAI(azure_endpoint=cfg.endpoint, api_key=cfg.key, api_version=cfg.api_version)
+
+        logger.info("Text embedding ADA 002 model client created successfully")
+        return client
+
+    except ValueError:
+        logger.error("Failed to create Text embedding ADA 002 model client: invalid configuration")
+        raise
+
+    except Exception:
+        logger.exception("Failed to create Text embedding ADA 002 model client")
         raise
