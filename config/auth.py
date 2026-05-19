@@ -7,7 +7,7 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.core.credentials import AzureKeyCredential
 from dotenv import find_dotenv, load_dotenv
 from config.logger import get_logger
-from openai import AzureOpenAI
+from openai import AsyncAzureOpenAI, AzureOpenAI
 
 load_dotenv(find_dotenv())
 
@@ -96,15 +96,20 @@ def create_document_intelligence_client(config: DocumentIntelligenceConfig | Non
         logger.exception("Failed to create Document Intelligence client")
         raise
 
-def create_llm_gpt_4o_client(config: AzureFoundryModelConfig | None = None) -> AzureOpenAI:
+def create_llm_gpt_4o_client(config: AzureFoundryModelConfig | None = None, *, async_client: bool = False) -> AzureOpenAI | AsyncAzureOpenAI:
     try:
         cfg = config or get_llm_gpt_4o_config()
 
-        logger.info("Creating GPT-4o model client")
+        logger.info("Creating GPT-4o model client (async=%s)", async_client)
 
-        client = AzureOpenAI(azure_endpoint=cfg.endpoint, api_key=cfg.key, api_version=cfg.api_version)
+        if async_client:
+            client = AsyncAzureOpenAI(azure_endpoint=cfg.endpoint, api_key=cfg.key, api_version=cfg.api_version)
+            logger.info("Async GPT-4o model client created successfully")
 
-        logger.info("GPT-4o model client created successfully")
+        else:
+            client = AzureOpenAI(azure_endpoint=cfg.endpoint, api_key=cfg.key, api_version=cfg.api_version)
+            logger.info("Sync GPT-4o model client created successfully")
+
         return client
 
     except ValueError:
