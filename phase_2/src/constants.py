@@ -31,13 +31,13 @@ KB_CHUNKS_FILENAME = "chunks.json"
 KB_MANIFEST_FILENAME = "manifest.json"
 
 #Allowed HMOs and insurance tiers
+ALLOWED_HMO = frozenset({"מכבי", "מאוחדת", "כללית"})
+ALLOWED_INSURANCE_TIERS = frozenset({"זהב", "כסף", "ארד"})
+
 HMOS: tuple[str, ...] = tuple(sorted(ALLOWED_HMO, key=len, reverse=True))
 TIERS: tuple[str, ...] = tuple(sorted(ALLOWED_INSURANCE_TIERS, key=len, reverse=True))
 ALL_HMOS: list[str] = list(ALLOWED_HMO)
 ALL_TIERS: list[str] = list(ALLOWED_INSURANCE_TIERS)
-
-ALLOWED_HMO = frozenset({"מכבי", "מאוחדת", "כללית"})
-ALLOWED_INSURANCE_TIERS = frozenset({"זהב", "כסף", "ארד"})
 
 # Chunk types
 CHUNK_TYPE_INTRO = "intro"
