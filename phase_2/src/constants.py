@@ -44,6 +44,7 @@ CHUNK_TYPE_CONTACT_PHONE = "contact_phone"
 CHUNK_TYPE_CONTACT_DETAILS = "contact_details"
 
 EMBEDDING_BATCH_SIZE = 64
+DEFAULT_RETRIEVAL_TOP_K = 3
 
 # Canonical gender labels stored in the profile.
 GENDER_MALE_HE = "זכר"
