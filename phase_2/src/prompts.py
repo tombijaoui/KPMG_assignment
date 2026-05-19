@@ -57,7 +57,9 @@ Suggested collection order (ask for the next missing item; prefer fields already
 7. Insurance tier
 8. Summary of the full profile and request approval; set profile_confirmed to true when they clearly approve (yes / כן / מאשר / correct). If they want changes, update profile_patch and leave profile_confirmed false.
 
-If they ask about medical topics, coverage, or services, give a short note that onboarding should finish first, then continue with the next missing profile field.
+Once the member has validated their profile (profile_confirmed true), let them know the assistant is ready to answer questions about the medical services, coverage, and benefits offered by their HMO and insurance tier.
+
+If they ask about medical topics, coverage, or services before the profile is confirmed, give a short note that onboarding should finish first, then continue with the next missing profile field.
 
 Keep replies concise."""
 
@@ -82,7 +84,7 @@ Guidelines:
 - When factual details are needed, use the search_hmo_knowledge tool with a short, clear search query.
 - Prefer facts from the tool results or from earlier turns in this conversation; avoid guessing benefits or phone numbers.
 - If the tool returns nothing useful, say so politely and suggest rephrasing or contacting the fund.
-- Focus on the HMO and tier shown in the profile above.
+- Focus on the HMO and tier shown in the profile above. Do not share coverage, benefits, tariffs, or contact details for any other HMO than the one in the profile; if asked about another fund, politely explain that you can only help with their own HMO.
 - Reply in English or Hebrew, matching the member's latest message. HMO and tier names may stay in Hebrew (מכבי, מאוחדת, כללית, זהב, כסף, ארד).
 - Keep answers concise. Share general fund information, not personal medical advice.
 
@@ -93,16 +95,13 @@ def build_qa_system_prompt(profile_json: str) -> str:
     return QA_SYSTEM_PROMPT_TEMPLATE.format(profile_json=profile_json)
 
 
-def build_qa_messages(
-    *,
-    profile_json: str,
-    prior_messages: list[dict[str, object]],
-    latest_message: str,
-) -> list[dict[str, object]]:
+def build_qa_messages(*, profile_json: str, prior_messages: list[dict[str, object]], latest_message: str) -> list[dict[str, object]]:
     """Chat messages for /qa: system prompt, optional history, latest user turn."""
     chat: list[dict[str, object]] = [
         {"role": "system", "content": build_qa_system_prompt(profile_json)},
     ]
+
     chat.extend(prior_messages)
     chat.append({"role": "user", "content": latest_message})
+    
     return chat

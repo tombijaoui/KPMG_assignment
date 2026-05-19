@@ -7,7 +7,6 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-# Allow `streamlit run phase_2/src/app.py` without PYTHONPATH set.
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
@@ -112,9 +111,11 @@ def _on_send_click() -> None:
     """Handle send without mutating widget state after instantiation."""
     draft_key = _composer_widget_key()
     user_text = str(st.session_state.get(draft_key, "")).strip()
+
     if not user_text:
         st.session_state.show_empty_message_warning = True
         return
+
     st.session_state.show_empty_message_warning = False
     st.session_state.messages.append({"role": "user", "content": user_text})
     st.session_state.pending_generation = True
@@ -125,6 +126,7 @@ def _composer_height(text: str) -> int:
     """Estimate textarea height (px) from draft text length."""
     if not text.strip():
         return MIN_COMPOSER_HEIGHT
+
     line_count = max(1, text.count("\n") + 1, (len(text) // CHARS_PER_LINE) + 1)
     line_count = min(line_count, MAX_VISIBLE_LINES)
     return min(MAX_COMPOSER_HEIGHT, max(MIN_COMPOSER_HEIGHT, 20 + line_count * 22))
@@ -133,8 +135,10 @@ def _composer_height(text: str) -> int:
 def _recent_messages_for_api() -> list[dict[str, str]]:
     """Last N chat turns (user + assistant) for collect-info context."""
     messages = st.session_state.messages
+
     if not messages:
         return []
+
     tail = messages[-COLLECT_RECENT_MESSAGE_LIMIT + 1:]
     return [{"role": str(m["role"]), "content": str(m["content"])} for m in tail]
 
@@ -142,8 +146,10 @@ def _recent_messages_for_api() -> list[dict[str, str]]:
 def _qa_messages_for_api() -> list[dict[str, Any]]:
     """Prior Q&A API history (capped client-side; server also applies QA_RECENT_MESSAGE_LIMIT)."""
     messages = st.session_state.qa_api_messages
+
     if len(messages) <= QA_RECENT_MESSAGE_LIMIT:
         return list(messages)
+
     return list(messages[-QA_RECENT_MESSAGE_LIMIT:])
 
 
@@ -151,12 +157,8 @@ def _append_qa_turn(turn_messages: list[dict[str, Any]]) -> None:
     st.session_state.qa_api_messages.extend(turn_messages)
 
 
-def _call_qa(
-    message: str,
-    user_profile: dict[str, Any],
-    messages: list[dict[str, Any]],
-    profile_confirmed: bool,
-) -> dict[str, Any]:
+def _call_qa(message: str, user_profile: dict[str, Any], messages: list[dict[str, Any]], profile_confirmed: bool) -> dict[str, Any]:
+    """POST to /qa with message, profile, and chat context."""
     response = requests.post(
         QA_URL,
         json={
@@ -171,11 +173,7 @@ def _call_qa(
     return response.json()
 
 
-def _call_collect_info(
-    message: str,
-    user_profile: dict[str, Any],
-    recent_messages: list[dict[str, str]],
-) -> dict[str, Any]:
+def _call_collect_info(message: str, user_profile: dict[str, Any], recent_messages: list[dict[str, str]]) -> dict[str, Any]:
     """POST to /collect-info with message, profile, and recent chat context."""
     response = requests.post(
         COLLECT_INFO_URL,

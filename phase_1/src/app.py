@@ -1,6 +1,15 @@
 from __future__ import annotations
+
+import sys
+from pathlib import Path
 from typing import Any
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
 import streamlit as st
+
 from phase_1.src.parsing import parsing_pipeline
 
 

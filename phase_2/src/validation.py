@@ -31,6 +31,7 @@ def _normalize_digits(value: str, *, length: int) -> str | None:
     digits = _DIGITS_ONLY.sub("", value.strip())
     if len(digits) != length:
         return None
+
     return digits
 
 
@@ -38,6 +39,7 @@ def _normalize_name(value: str) -> str | None:
     cleaned = " ".join(value.strip().split())
     if len(cleaned) < 2:
         return None
+
     return cleaned
 
 
@@ -45,31 +47,41 @@ def _normalize_gender(value: str) -> str | None:
     raw = value.strip()
     if not raw:
         return None
+
     if raw in GENDER_TO_HEBREW:
         return GENDER_TO_HEBREW[raw]
+
     lowered = raw.lower()
+
     if lowered in GENDER_TO_HEBREW:
         return GENDER_TO_HEBREW[lowered]
+
     return None
 
 
 def _normalize_hmo(value: str) -> str | None:
     raw = value.strip()
+
     if raw in ALLOWED_HMO:
         return raw
+
     for name in ALLOWED_HMO:
         if name in raw:
             return name
+
     return None
 
 
 def _normalize_tier(value: str) -> str | None:
     raw = value.strip()
+
     if raw in ALLOWED_INSURANCE_TIERS:
         return raw
+
     for tier in ALLOWED_INSURANCE_TIERS:
         if tier in raw:
             return tier
+
     return None
 
 
@@ -85,37 +97,47 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 field,
                 value,
             )
+
             return None
+
         result = _normalize_name(value)
+
         if result is None:
             logger.info(
                 "Validation rejected field=%s raw=%r reason=name too short",
                 field,
                 value,
             )
+
             return None
+
         logger.info("Validation accepted field=%s value=%r", field, result)
         return result
 
     if field in {"id_number", "hmo_card_number"}:
         if isinstance(value, int):
             value = str(value)
+
         if not isinstance(value, str):
             logger.info(
                 "Validation rejected field=%s raw=%r reason=expected string",
                 field,
                 value,
             )
+
             return None
+
         result = _normalize_digits(value, length=9)
         if result is None:
             digit_count = len(_DIGITS_ONLY.sub("", value.strip()))
+
             logger.info(
                 "Validation rejected field=%s raw=%r reason=expected 9 digits got %s",
                 field,
                 value,
                 digit_count,
             )
+
             return None
         logger.info("Validation accepted field=%s value=%r", field, result)
         return result
@@ -127,7 +149,9 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 field,
                 value,
             )
+
             return None
+
         result = _normalize_gender(value)
         if result is None:
             logger.info(
@@ -135,28 +159,35 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 field,
                 value,
             )
+
             return None
+
         logger.info("Validation accepted field=%s value=%r", field, result)
         return result
 
     if field == "age":
         try:
             age = int(value)
+
         except (TypeError, ValueError):
             logger.info(
                 "Validation rejected field=%s raw=%r reason=expected integer age",
                 field,
                 value,
             )
+
             return None
+
         if 0 <= age <= 120:
             logger.info("Validation accepted field=%s value=%s", field, age)
             return age
+
         logger.info(
             "Validation rejected field=%s raw=%r reason=age must be between 0 and 120",
             field,
             value,
         )
+
         return None
 
     if field == "hmo":
@@ -166,7 +197,9 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 field,
                 value,
             )
+
             return None
+
         result = _normalize_hmo(value)
         if result is None:
             logger.info(
@@ -175,7 +208,9 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 value,
                 sorted(ALLOWED_HMO),
             )
+
             return None
+
         logger.info("Validation accepted field=%s value=%r", field, result)
         return result
 
@@ -186,7 +221,9 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 field,
                 value,
             )
+
             return None
+
         result = _normalize_tier(value)
         if result is None:
             logger.info(
@@ -195,7 +232,9 @@ def validate_profile_field(field: str, value: Any) -> Any | None:
                 value,
                 sorted(ALLOWED_INSURANCE_TIERS),
             )
+
             return None
+
         logger.info("Validation accepted field=%s value=%r", field, result)
         return result
 
@@ -221,11 +260,14 @@ def merge_profile(current: UserProfile, patch: ProfilePatch) -> UserProfile:
         if field not in _PROFILE_FIELDS:
             logger.warning("merge_profile: ignoring unknown patch field=%s", field)
             continue
+
         before = data.get(field)
         normalized = validate_profile_field(field, raw_value)
+
         if normalized is None:
             rejected.append(field)
             continue
+
         data[field] = normalized
         applied.append(field)
         if before != normalized:
@@ -247,17 +289,22 @@ def merge_profile(current: UserProfile, patch: ProfilePatch) -> UserProfile:
 def is_profile_complete(profile: UserProfile) -> bool:
     """True when every required field is present and valid."""
     missing: list[str] = []
+
     for field in _PROFILE_FIELDS:
         value = getattr(profile, field)
+
         if value is None:
             missing.append(field)
             continue
+
         if validate_profile_field(field, value) is None:
             missing.append(field)
 
     complete = not missing
+
     if complete:
         logger.info("Profile completeness check: complete=True (all %s fields valid)", len(_PROFILE_FIELDS))
+        
     else:
         logger.info(
             "Profile completeness check: complete=False missing=%s",

@@ -38,16 +38,19 @@ class CollectLLMOutput(BaseModel):
 
 
 class ChatMessage(BaseModel):
+    """Chat message in the Q&A chat history."""
     role: str = Field(..., description="user or assistant")
     content: str = Field(..., min_length=1)
 
 
 class QAToolCallFunction(BaseModel):
+    """Function call for a tool in the Q&A chat history."""
     name: str
     arguments: str
 
 
 class QAToolCall(BaseModel):
+    """Function call for a tool in the Q&A chat history."""
     id: str
     type: str = "function"
     function: QAToolCallFunction
@@ -82,6 +85,7 @@ class QAToolUsage(BaseModel):
 
 
 class CollectInfoRequest(BaseModel):
+    """Request body for the /collect-info endpoint."""
     message: str = Field(..., min_length=1, description="Latest user message")
     user_profile: UserProfile = Field(default_factory=UserProfile)
     recent_messages: list[ChatMessage] = Field(
@@ -91,6 +95,7 @@ class CollectInfoRequest(BaseModel):
 
 
 class CollectInfoResponse(BaseModel):
+    """Response body for the /collect-info endpoint."""
     reply: str
     user_profile: UserProfile
     profile_confirmed: bool = False
@@ -99,6 +104,7 @@ class CollectInfoResponse(BaseModel):
 
 
 class QARequest(BaseModel):
+    """Request body for the /qa endpoint."""
     message: str = Field(..., min_length=1, description="Latest user question")
     user_profile: UserProfile = Field(..., description="Confirmed member profile")
     messages: list[QAChatMessage] = Field(
@@ -112,6 +118,7 @@ class QARequest(BaseModel):
 
 
 class QAResponse(BaseModel):
+    """Response body for the /qa endpoint."""
     reply: str
     turn_messages: list[QAChatMessage] = Field(
         default_factory=list,

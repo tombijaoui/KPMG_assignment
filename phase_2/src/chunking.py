@@ -1,5 +1,3 @@
-"""Parse HMO knowledge HTML into chunks with metadata and compute embeddings."""
-
 from __future__ import annotations
 
 import sys
@@ -136,10 +134,13 @@ def parse_html_file(path: Path) -> list[KnowledgeChunk]:
     for sibling in h2.find_next_siblings():
         if sibling is table:
             break
+
         if not isinstance(sibling, Tag):
             continue
+
         if sibling.name == "p":
             intro_blocks.append(sibling.get_text("\n", strip=True))
+
         elif sibling.name == "ul" and overview_block is None:
             overview_block = sibling.get_text("\n", strip=True)
 
@@ -180,22 +181,28 @@ def parse_html_file(path: Path) -> list[KnowledgeChunk]:
     header_cells = table.find("tr").find_all(["th", "td"])
     headers = [cell.get_text(strip=True) for cell in header_cells]
     hmo_by_column: dict[int, str] = {}
+
     for col_idx, header in enumerate(headers):
         if header in ALLOWED_HMO:
             hmo_by_column[col_idx] = header
 
     for row in table.find_all("tr")[1:]:
         cells = row.find_all(["td", "th"])
+
         if not cells:
             continue
+
         service_name = cells[0].get_text(strip=True)
+
         if not service_name:
             continue
 
         for col_idx, hmo in hmo_by_column.items():
             if col_idx >= len(cells):
                 continue
+
             cell = cells[col_idx]
+
             for tier, benefit in split_cell_by_tier(cell).items():
                 chunks.append(
                     KnowledgeChunk(
@@ -216,24 +223,29 @@ def parse_html_file(path: Path) -> list[KnowledgeChunk]:
     for h3 in soup.find_all("h3"):
         title = h3.get_text(strip=True)
         ul = h3.find_next_sibling("ul")
+
         if ul is None:
             continue
 
         if "טלפון" in title or "מספרי" in title:
             chunk_type = CHUNK_TYPE_CONTACT_PHONE
             details = False
+
         elif "פרטים" in title:
             chunk_type = CHUNK_TYPE_CONTACT_DETAILS
             details = True
+
         else:
             continue
 
         for li in ul.find_all("li", recursive=False):
             li_text = li.get_text("\n", strip=True)
             hmo = _detect_hmo_prefix(li_text)
+
             if hmo is None:
                 logger.warning("Could not detect HMO in %s: %s", path.name, li_text[:80])
                 continue
+
             chunks.append(
                 KnowledgeChunk(
                     chunk_id=_next_chunk_id(source_file, chunk_index),
@@ -263,6 +275,7 @@ def scrape_html_directory(html_dir: Path | None = None) -> list[KnowledgeChunk]:
         raise FileNotFoundError(f"No HTML files in {directory}")
 
     all_chunks: list[KnowledgeChunk] = []
+
     for path in html_paths:
         file_chunks = parse_html_file(path)
         logger.info("Parsed %s — %s chunks", path.name, len(file_chunks))
@@ -272,13 +285,8 @@ def scrape_html_directory(html_dir: Path | None = None) -> list[KnowledgeChunk]:
     return all_chunks
 
 
-def embed_chunks(
-    chunks: list[KnowledgeChunk],
-    *,
-    client: AzureOpenAI | None = None,
-    model_name: str | None = None,
-    batch_size: int = EMBEDDING_BATCH_SIZE,
-) -> list[KnowledgeChunk]:
+def embed_chunks(chunks: list[KnowledgeChunk], *, client: AzureOpenAI | None = None, model_name: str | None = None, 
+                batch_size: int = EMBEDDING_BATCH_SIZE) -> list[KnowledgeChunk]:
     """Compute ADA-002 embeddings for every chunk (mutates and returns the same list)."""
     if not chunks:
         logger.info("No chunks to embed")
@@ -302,6 +310,7 @@ def embed_chunks(
         response = embedding_client.embeddings.create(model=deployment, input=batch)
         batch_vectors = [item.embedding for item in sorted(response.data, key=lambda row: row.index)]
         all_vectors.extend(batch_vectors)
+        
         logger.info(
             "Embedded batch %s–%s / %s",
             start + 1,
