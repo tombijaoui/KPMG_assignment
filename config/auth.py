@@ -48,7 +48,7 @@ def get_document_intelligence_config() -> DocumentIntelligenceConfig:
     except ValueError:
         logger.error("Failed to load Document Intelligence configuration")
         raise
-        
+
 
 def get_llm_gpt_4o_config() -> AzureFoundryModelConfig:
     try:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 COLLECT_LLM_TEMPERATURE = 0.0
 
@@ -22,6 +23,25 @@ COLLECT_LLM_RETRY_DELAY_SEC = 1.0
 
 ALLOWED_HMO = frozenset({"מכבי", "מאוחדת", "כללית"})
 ALLOWED_INSURANCE_TIERS = frozenset({"זהב", "כסף", "ארד"})
+
+# Knowledge base / indexing (phase_2/data, phase_2/knowledge_base)
+PHASE_2_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_HTML_DIR = PHASE_2_DIR / "data"
+DEFAULT_KB_DIR = PHASE_2_DIR / "knowledge_base"
+
+HMOS: tuple[str, ...] = tuple(sorted(ALLOWED_HMO, key=len, reverse=True))
+TIERS: tuple[str, ...] = tuple(sorted(ALLOWED_INSURANCE_TIERS, key=len, reverse=True))
+ALL_HMOS: list[str] = list(ALLOWED_HMO)
+ALL_TIERS: list[str] = list(ALLOWED_INSURANCE_TIERS)
+
+CHUNK_TYPE_INTRO = "intro"
+CHUNK_TYPE_SERVICE_OVERVIEW = "service_overview"
+CHUNK_TYPE_COVERAGE = "coverage"
+CHUNK_TYPE_CONTACT_PHONE = "contact_phone"
+CHUNK_TYPE_CONTACT_DETAILS = "contact_details"
+
+EMBEDDING_BATCH_SIZE = 64
+
 # Canonical gender labels stored in the profile.
 GENDER_MALE_HE = "זכר"
 GENDER_FEMALE_HE = "נקבה"
@@ -48,9 +68,7 @@ GENDER_ENGLISH_TO_CANONICAL: dict[str, str] = {
     "man": GENDER_MALE_HE,
     "woman": GENDER_FEMALE_HE,
     "boy": GENDER_MALE_HE,
-    "girl": GENDER_FEMALE_HE,
-    "homme": GENDER_MALE_HE,
-    "femme": GENDER_FEMALE_HE,
+    "girl": GENDER_FEMALE_HE
 }
 
 GENDER_TO_HEBREW = {**GENDER_HEBREW_SYNONYMS_TO_CANONICAL, **GENDER_ENGLISH_TO_CANONICAL}
