@@ -7,9 +7,9 @@ SEARCH_HMO_KNOWLEDGE_TOOL: dict[str, Any] = {
     "function": {
         "name": "search_hmo_knowledge",
         "description": (
-            "Search the Israeli health-fund knowledge base for medical service coverage, "
-            "benefits, and contact details. Use when the user asks about HMO services, "
-            "insurance tiers, discounts, or phone numbers — not for greetings or profile edits."
+            "Look up Israeli health-fund information on service coverage, benefits, and "
+            "contact details. Helpful when the member asks about HMO services, insurance "
+            "tiers, discounts, or phone numbers. Usually skip for greetings only."
         ),
         "parameters": {
             "type": "object",
@@ -23,3 +23,5 @@ SEARCH_HMO_KNOWLEDGE_TOOL: dict[str, Any] = {
         },
     },
 }
+
+QA_TOOLS: list[dict[str, Any]] = [SEARCH_HMO_KNOWLEDGE_TOOL]

@@ -22,6 +22,8 @@ from phase_2.src.constants import (
     MAX_COMPOSER_HEIGHT,
     MAX_VISIBLE_LINES,
     MIN_COMPOSER_HEIGHT,
+    QA_RECENT_MESSAGE_LIMIT,
+    QA_URL,
     STREAM_WORD_DELAY_SEC,
 )
 
@@ -89,8 +91,14 @@ if "user_profile" not in st.session_state:
 if "profile_confirmed" not in st.session_state:
     st.session_state.profile_confirmed = False
 
+if "profile_valid" not in st.session_state:
+    st.session_state.profile_valid = False
+
 if "ready_for_qa" not in st.session_state:
     st.session_state.ready_for_qa = False
+
+if "qa_api_messages" not in st.session_state:
+    st.session_state.qa_api_messages: list[dict[str, Any]] = []
 
 if st.session_state.show_empty_message_warning:
     st.warning("Please enter a message before sending.")
@@ -131,6 +139,38 @@ def _recent_messages_for_api() -> list[dict[str, str]]:
     return [{"role": str(m["role"]), "content": str(m["content"])} for m in tail]
 
 
+def _qa_messages_for_api() -> list[dict[str, Any]]:
+    """Prior Q&A API history (capped client-side; server also applies QA_RECENT_MESSAGE_LIMIT)."""
+    messages = st.session_state.qa_api_messages
+    if len(messages) <= QA_RECENT_MESSAGE_LIMIT:
+        return list(messages)
+    return list(messages[-QA_RECENT_MESSAGE_LIMIT:])
+
+
+def _append_qa_turn(turn_messages: list[dict[str, Any]]) -> None:
+    st.session_state.qa_api_messages.extend(turn_messages)
+
+
+def _call_qa(
+    message: str,
+    user_profile: dict[str, Any],
+    messages: list[dict[str, Any]],
+    profile_confirmed: bool,
+) -> dict[str, Any]:
+    response = requests.post(
+        QA_URL,
+        json={
+            "message": message,
+            "user_profile": user_profile,
+            "messages": messages,
+            "profile_confirmed": profile_confirmed,
+        },
+        timeout=120,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 def _call_collect_info(
     message: str,
     user_profile: dict[str, Any],
@@ -169,6 +209,15 @@ def _last_user_message() -> str:
     return ""
 
 
+def _use_qa_endpoint() -> bool:
+    """Use /qa only when collect phase flags indicate a confirmed, complete profile."""
+    return (
+        st.session_state.ready_for_qa
+        and st.session_state.profile_valid
+        and st.session_state.profile_confirmed
+    )
+
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -177,26 +226,49 @@ if st.session_state.pending_generation:
     with st.chat_message("assistant"):
         try:
             with st.spinner("Thinking..."):
-                collect_result = _call_collect_info(
-                    _last_user_message(),
-                    st.session_state.user_profile,
-                    _recent_messages_for_api(),
-                )
-            assistant_reply = str(collect_result.get("reply", ""))
-            st.session_state.user_profile = collect_result.get(
-                "user_profile",
-                st.session_state.user_profile,
-            )
-            st.session_state.profile_confirmed = bool(
-                collect_result.get("profile_confirmed", False)
-            )
-            st.session_state.ready_for_qa = bool(collect_result.get("ready_for_qa", False))
+                if _use_qa_endpoint():
+                    qa_result = _call_qa(
+                        _last_user_message(),
+                        st.session_state.user_profile,
+                        _qa_messages_for_api(),
+                        st.session_state.profile_confirmed,
+                    )
+                    assistant_reply = str(qa_result.get("reply", ""))
+                    _append_qa_turn(list(qa_result.get("turn_messages", [])))
+                    tool_calls = qa_result.get("tool_calls", [])
+                else:
+                    collect_result = _call_collect_info(
+                        _last_user_message(),
+                        st.session_state.user_profile,
+                        _recent_messages_for_api(),
+                    )
+                    assistant_reply = str(collect_result.get("reply", ""))
+                    st.session_state.user_profile = collect_result.get(
+                        "user_profile",
+                        st.session_state.user_profile,
+                    )
+                    st.session_state.profile_confirmed = bool(
+                        collect_result.get("profile_confirmed", False)
+                    )
+                    st.session_state.profile_valid = bool(
+                        collect_result.get("profile_valid", False)
+                    )
+                    st.session_state.ready_for_qa = bool(collect_result.get("ready_for_qa", False))
+                    tool_calls = []
+
             st.write_stream(_stream_words(assistant_reply))
             st.session_state.messages.append(
                 {"role": "assistant", "content": assistant_reply}
             )
-            if st.session_state.ready_for_qa:
-                st.success("Profile confirmed — Q&A phase will be available soon.")
+            if tool_calls:
+                tool_summary = ", ".join(
+                    f"{item['order']}. {item['name']}"
+                    for item in tool_calls
+                )
+                st.caption(f"Knowledge lookup: {tool_summary}")
+            if _use_qa_endpoint() and not st.session_state.get("_qa_banner_shown"):
+                st.success("Profile confirmed — you can now ask about HMO services and coverage.")
+                st.session_state._qa_banner_shown = True
         except requests.RequestException as exc:
             error_text = (
                 f"Sorry, the assistant is unavailable ({exc}). "

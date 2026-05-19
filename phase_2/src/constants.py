@@ -4,10 +4,12 @@ import os
 from pathlib import Path
 
 COLLECT_LLM_TEMPERATURE = 0.0
+QA_LLM_TEMPERATURE = 0.2
 
 # Streamlit UI / API client
 API_BASE_URL = os.getenv("PHASE_2_API_BASE_URL", "http://localhost:8000").rstrip("/")
 COLLECT_INFO_URL = f"{API_BASE_URL}/collect-info"
+QA_URL = f"{API_BASE_URL}/qa"
 
 MIN_COMPOSER_HEIGHT = 52
 MAX_COMPOSER_HEIGHT = 140
@@ -17,6 +19,9 @@ STREAM_WORD_DELAY_SEC = 0.04
 
 # Recent chat turns sent only when short replies need context (yes / corrections).
 COLLECT_RECENT_MESSAGE_LIMIT = 6
+
+# Q&A chat history sent to the LLM (user, assistant, and tool messages count each as one).
+QA_RECENT_MESSAGE_LIMIT = 30
 
 COLLECT_LLM_MAX_RETRIES = 2
 COLLECT_LLM_RETRY_DELAY_SEC = 1.0
