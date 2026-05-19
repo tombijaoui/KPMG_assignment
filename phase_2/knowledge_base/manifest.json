@@ -1,0 +1,7 @@
+{
+  "embedding_model": "text-embedding-ada-002",
+  "dimension": 1536,
+  "chunk_count": 372,
+  "index_type": "IndexFlatIP",
+  "vectors_normalized": true
+}
