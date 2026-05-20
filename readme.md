@@ -1,7 +1,6 @@
 # KPMG GenAI Assignment — Implementation Notes
 
-This document describes how the two assignment phases were implemented: design choices, pipeline steps, and how to run each part locally. Content is added incrementally; sections marked below will be filled in as we go.
-
+This document describes how the two assignment phases were implemented: design choices, pipeline steps, and how to run each part locally. 
 ---
 
 ## Table of contents
