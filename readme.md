@@ -329,3 +329,15 @@ streamlit run phase_2/src/app.py
 ```
 
 Complete onboarding in the browser until the profile is confirmed, then ask questions about your HMO and insurance tier. The UI calls `http://localhost:8000` by default (`PHASE_2_API_BASE_URL` in `.env` can override this).
+
+---
+
+## How AI tooling was used in this project
+
+**Design and architecture** — All system architecture and the design of the pipelines (scraping, parsing, indexing, chunking, retrieval, validation, API boundaries, and how the two phases fit together) were conceived and owned by me. Strategic choices (e.g. multi-pass extraction in Phase 1, RAG with metadata filtering in Phase 2, stateless APIs, human-in-the-loop confirmation, Agentic RAG) are documented above as deliberate decisions, not suggestions from a model.
+
+**Where AI assistants helped** — Coding assistants were used mainly to implement or refactor **more complex functions** (boilerplate, SDK wiring, edge cases) and occasionally to **resolve Git merge conflicts** or clarify tooling errors. They did not replace architectural thinking or requirements analysis.
+
+**Quality control** — Whenever a tool generated a full function or a larger patch, the result was **read, verified, and exercised in development** (manual runs, API checks, sample documents). Generated code was treated as a draft until it matched the intended behavior and project conventions.
+
+In short: **AI accelerated implementation**; **design, trade-offs, and correctness** remained human-led and validated end-to-end.
