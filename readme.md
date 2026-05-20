@@ -15,7 +15,7 @@ This document describes how the two assignment phases were implemented: design c
 
 Both phases rely on a small shared package at the repository root. It centralizes Azure credentials, SDK client factories, and logging so phase-specific code stays focused on business logic.
 
-Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). The `.env` file itself is not committed to Git.
+Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). The `.env` file is available in Git, you have to add all the different API keys and all the different API version (available at the end of the relative endpoint) for every model.
 
 | Module | Used by | Purpose |
 |--------|---------|---------|
