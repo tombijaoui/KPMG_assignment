@@ -16,7 +16,7 @@ This document describes how the two assignment phases were implemented: design c
 
 Both phases rely on a small shared package at the repository root. It centralizes Azure credentials, SDK client factories, and logging so phase-specific code stays focused on business logic.
 
-Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). The `.env` file itself is not committed to Git.
+Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). The `.env` file itself is committed to Git without the API keys, endpoints and API versions of the models. When you clone the repo, you have to fill by yourself the different API keys, API versions (available at the end of the endpoint as a parameter) and the different endpoints of the different models
 
 | Module | Used by | Purpose |
 |--------|---------|---------|
@@ -103,7 +103,7 @@ From the repository root:
    ```bash
    pip install -r requirements.txt
    ```
-2. Create or edit `.env` at the project root and fill in all required Azure API keys and endpoints (Document Intelligence and GPT-4o mini for Phase 1). See `config/auth.py` for the variable names.
+2. Edit `.env` at the project root and fill in all required Azure API keys, API versions and endpoints (Document Intelligence and GPT-4o mini for Phase 1). See `config/auth.py` for the variable names.
 3. Start the Streamlit app:
    ```bash
    streamlit run phase_1/src/app.py
@@ -143,6 +143,38 @@ The API uses an **async** GPT-4o client so long LLM calls do not block other req
 | `tools.py` | OpenAI function schema for `search_hmo_knowledge` |
 
 ### 2.3 Architecture and pipeline
+
+The **Q&A chatbot is a RAG system** (Retrieval-Augmented Generation): GPT-4o does not answer from memory alone. Factual replies are grounded in passages retrieved from the HMO knowledge base built from the assignment HTML files. Onboarding (profile collection) is a standard guided dialogue; **RAG applies only to the answer phase.**
+
+**RAG architecture (high level):**
+
+```text
+                    ┌─────────────────────────┐
+  Offline (once)    │  HTML → chunks → embed  │
+                    │  → FAISS + chunks.json  │
+                    └───────────┬─────────────┘
+                                │
+  Online (per question)         ▼
+  User question ──► GPT-4o ──► needs facts? ──no──► direct reply
+                        │ yes
+                        ▼
+              embed query + filter by profile (HMO, tier)
+                        │
+                        ▼
+              top-3 chunks from vector index
+                        │
+                        ▼
+              GPT-4o reads passages + profile → final answer
+```
+
+| Piece | Role |
+|-------|------|
+| **Index** | Stores embedded chunks from all HMO HTML sources (see [§2.4](#24-knowledge-base--scraping-chunking-embeddings-and-index)) |
+| **Retriever** | Finds the best passages for the question, scoped to the member’s fund and tier (see [§2.5](#25-retrieval--personalized-search-over-the-knowledge-base)) |
+| **Generator** | GPT-4o with the confirmed profile in the system prompt and retrieved text as tool context |
+| **Orchestration** | The model **chooses** when to search (tool call), so simple messages skip retrieval; precise questions trigger lookup |
+
+This is **agentic RAG**: retrieval is not run on every turn—only when the LLM decides it needs knowledge-base evidence. That keeps latency low for chit-chat and focuses context on real service or coverage questions.
 
 #### When the API starts
 
@@ -221,7 +253,11 @@ On disk we keep three artifacts in `phase_2/knowledge_base/`:
 | `chunks.json` | Chunk id, text, and metadata (vectors are only in FAISS) |
 | `manifest.json` | Embedding model name, dimension, chunk count, index settings |
 
-At API startup, if these files exist they are loaded into memory; if not, the full pipeline runs once (parse → embed → build → save) in a background thread, then serving begins. At answer time, the user’s question is embedded with the same model, compared against the index, and the best matches are filtered by the member’s HMO and tier before the top passages are sent to GPT-4o.
+**Loading at API startup** — When the backend starts, loading or building the index runs in a **separate worker thread** (using `asyncio.to_thread`). Parsing HTML, calling the embedding API, and writing FAISS are CPU- and I/O-heavy; moving that work off the event loop keeps the server from freezing while the index is prepared. This matters especially because the **collect-info** phase (profile onboarding) does **not** use the vector index at all—only **Q&A / RAG** does. The index is therefore an independent concern from onboarding: we prepare it once at startup for later retrieval, without tying it to how member data is collected.
+
+If `phase_2/knowledge_base/` already exists, the files are loaded; otherwise the full pipeline runs once (parse → embed → build → save), then the API is ready to serve.
+
+At answer time, the user’s question is embedded with the same model, compared against the index, and the best matches are filtered by the member’s HMO and tier before the top passages are sent to GPT-4o.
 
 ```text
 phase_2/data/*.html  →  parse & chunk (+ metadata)
@@ -280,7 +316,7 @@ From the repository root:
    ```bash
    pip install -r requirements.txt
    ```
-2. Create or edit `.env` at the project root and fill in all Azure API keys, endpoints, and model deployment names (GPT-4o, text-embedding-ada-002, etc.)
+2. Edit `.env` at the project root and fill in all Azure API keys, API versions and endpoints.
 3. Start the backend:
    ```bash
    uvicorn phase_2.src.api:app --reload --port 8000
