@@ -1,7 +1,6 @@
 # KPMG GenAI Assignment — Implementation Notes
 
-This document describes how the two assignment phases were implemented: design choices, pipeline steps, and how to run each part locally. Content is added incrementally; sections marked below will be filled in as we go.
-
+This document describes how the two assignment phases were implemented: design choices, pipeline steps, and how to run each part locally. 
 ---
 
 ## Table of contents
@@ -16,7 +15,7 @@ This document describes how the two assignment phases were implemented: design c
 
 Both phases rely on a small shared package at the repository root. It centralizes Azure credentials, SDK client factories, and logging so phase-specific code stays focused on business logic.
 
-Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). The `.env` file itself is committed to Git without the API keys, endpoints and API versions of the models. When you clone the repo, you have to fill by yourself the different API keys, API versions (available at the end of the endpoint as a parameter) and the different endpoints of the different models
+Credentials are loaded once from a `.env` file at the project root (via `python-dotenv`). After cloning, create or edit `.env` locally and add your Azure API keys, deployment endpoints, and model API versions (the version often appears as a query parameter on the endpoint URL). Do not commit real secrets.
 
 | Module | Used by | Purpose |
 |--------|---------|---------|
